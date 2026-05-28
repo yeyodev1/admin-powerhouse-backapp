@@ -87,3 +87,28 @@ export async function generateReport(req: AuthRequest, res: Response, next: Next
     next(error);
   }
 }
+
+export async function saveAnalysis(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { filesUsed, openAiResult, patientParams, claudeResult } = req.body;
+    if (!filesUsed || !openAiResult || !patientParams || !claudeResult) {
+      throw new (await import("../errors/customError.error")).CustomError("Missing required fields for saving analysis", 400);
+    }
+    
+    const { addAiAnalysis } = await import("../services/person.service");
+    const person = await addAiAnalysis(req.params.id as string, {
+      filesUsed,
+      openAiResult,
+      patientParams,
+      claudeResult
+    });
+    
+    res.status(HttpStatusCode.Created).send({
+      message: "Analysis history saved successfully.",
+      person,
+    });
+    return;
+  } catch (error) {
+    next(error);
+  }
+}

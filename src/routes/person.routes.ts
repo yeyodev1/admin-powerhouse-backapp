@@ -10,6 +10,7 @@ import {
   deleteFile,
   analyzePerson,
   generateReport,
+  saveAnalysis,
 } from "../controllers/person.controller";
 
 const router = Router();
@@ -23,4 +24,5 @@ router.post("/persons/:id/files", authMiddleware, uploadFile);
 router.delete("/persons/:id/files/:fileId", authMiddleware, deleteFile);
 router.post("/persons/:id/analyze", authMiddleware, analyzePerson);
 router.post("/persons/:id/report", authMiddleware, generateReport);
+router.post("/persons/:id/analyses", authMiddleware, saveAnalysis);
 export default router;

@@ -7,6 +7,15 @@ export interface IMedicalFile {
   uploadedAt: Date;
 }
 
+export interface IAiAnalysis {
+  _id?: mongoose.Types.ObjectId;
+  date: Date;
+  filesUsed: string[];
+  openAiResult: string;
+  patientParams: object;
+  claudeResult: string;
+}
+
 export interface IPerson extends Document {
   name: string;
   email?: string;
@@ -15,6 +24,7 @@ export interface IPerson extends Document {
   address?: string;
   notes?: string;
   medicalFiles: IMedicalFile[];
+  aiAnalyses: IAiAnalysis[];
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +37,14 @@ const MedicalFileSchema = new Schema<IMedicalFile>({
   uploadedAt: { type: Date, default: Date.now },
 });
 
+const AiAnalysisSchema = new Schema<IAiAnalysis>({
+  date: { type: Date, default: Date.now },
+  filesUsed: [{ type: String }],
+  openAiResult: { type: String },
+  patientParams: { type: Schema.Types.Mixed },
+  claudeResult: { type: String },
+});
+
 const PersonSchema = new Schema<IPerson>(
   {
     name: { type: String, required: true },
@@ -36,6 +54,7 @@ const PersonSchema = new Schema<IPerson>(
     address: { type: String },
     notes: { type: String },
     medicalFiles: [MedicalFileSchema],
+    aiAnalyses: [AiAnalysisSchema],
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

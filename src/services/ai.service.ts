@@ -113,7 +113,7 @@ Estructura JSON:
             "Content-Type": "application/json",
             Authorization: `Bearer ${this.openAiKey}`,
           },
-          timeout: 45000,
+          timeout: 300000,
         }
       );
 
@@ -215,7 +215,7 @@ Genera una lista de 8 a 10 referencias bibliográficas reales y académicas en f
       const response = await axios.post(
         "https://api.anthropic.com/v1/messages",
         {
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-sonnet-4-6",
           max_tokens: 4000,
           system: claudeSystemPrompt,
           messages: [{ role: "user", content: patientDataPrompt }],
@@ -226,15 +226,16 @@ Genera una lista de 8 a 10 referencias bibliográficas reales y académicas en f
             "x-api-key": this.anthropicKey,
             "anthropic-version": "2023-06-01",
           },
-          timeout: 60000,
+          timeout: 300000,
         }
       );
 
       return response.data?.content?.[0]?.text || "";
     } catch (err: any) {
-      console.error("Anthropic API call failed:", err.response?.data || err.message);
+      const errorDetails = err.response?.data || err.message;
+      console.error("Anthropic API call failed:", errorDetails);
       throw new CustomError(
-        err.response?.data?.error?.message || "Failed to communicate with Anthropic API.",
+        typeof errorDetails === 'object' ? JSON.stringify(errorDetails) : errorDetails,
         err.response?.status || 500
       );
     }

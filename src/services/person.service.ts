@@ -72,3 +72,14 @@ export async function removeMedicalFile(personId: string, fileId: string) {
     { new: true }
   );
 }
+
+export async function addAiAnalysis(
+  personId: string,
+  analysisData: { filesUsed: string[]; openAiResult: string; patientParams: any; claudeResult: string }
+) {
+  return Person.findByIdAndUpdate(
+    personId,
+    { $push: { aiAnalyses: { ...analysisData, date: new Date() } } },
+    { new: true }
+  );
+}

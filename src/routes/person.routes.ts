@@ -8,6 +8,8 @@ import {
   remove,
   uploadFile,
   deleteFile,
+  analyzePerson,
+  generateReport,
 } from "../controllers/person.controller";
 
 const router = Router();
@@ -19,5 +21,6 @@ router.patch("/persons/:id", authMiddleware, update);
 router.delete("/persons/:id", authMiddleware, remove);
 router.post("/persons/:id/files", authMiddleware, uploadFile);
 router.delete("/persons/:id/files/:fileId", authMiddleware, deleteFile);
-
+router.post("/persons/:id/analyze", authMiddleware, analyzePerson);
+router.post("/persons/:id/report", authMiddleware, generateReport);
 export default router;

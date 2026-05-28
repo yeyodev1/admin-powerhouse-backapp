@@ -1,5 +1,6 @@
-import { Response } from "express";
+import { Response, NextFunction } from "express";
 import { AuthRequest } from "../types/AuthRequest";
+import { HttpStatusCode } from "axios";
 import {
   getPersons,
   getPersonById,
@@ -9,6 +10,7 @@ import {
   addMedicalFile,
   removeMedicalFile,
 } from "../services/person.service";
+import { aiService } from "../services/ai.service";
 
 export async function getAllPersons(req: AuthRequest, res: Response) {
   const persons = await getPersons();
@@ -16,7 +18,7 @@ export async function getAllPersons(req: AuthRequest, res: Response) {
 }
 
 export async function getOnePerson(req: AuthRequest, res: Response) {
-  const person = await getPersonById(req.params.id);
+  const person = await getPersonById(req.params.id as string);
   res.json(person);
 }
 
@@ -29,12 +31,12 @@ export async function create(req: AuthRequest, res: Response) {
 }
 
 export async function update(req: AuthRequest, res: Response) {
-  const person = await updatePerson(req.params.id, req.body);
+  const person = await updatePerson(req.params.id as string, req.body);
   res.json(person);
 }
 
 export async function remove(req: AuthRequest, res: Response) {
-  await deletePerson(req.params.id);
+  await deletePerson(req.params.id as string);
   res.json({ message: "Person deleted" });
 }
 
@@ -43,11 +45,45 @@ export async function uploadFile(req: AuthRequest, res: Response) {
   if (!url || !filename) {
     throw new (await import("../errors/customError.error")).CustomError("url and filename required", 400);
   }
-  const person = await addMedicalFile(req.params.id, { url, filename, type: type || "application/octet-stream" });
+  const person = await addMedicalFile(req.params.id as string, { url, filename, type: type || "application/octet-stream" });
   res.json(person);
 }
 
 export async function deleteFile(req: AuthRequest, res: Response) {
-  const person = await removeMedicalFile(req.params.id, req.params.fileId);
+  const person = await removeMedicalFile(req.params.id as string, req.params.fileId as string);
   res.json(person);
+}
+
+export async function analyzePerson(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { patientContext, files } = req.body;
+    if (!patientContext || !files) {
+      throw new (await import("../errors/customError.error")).CustomError("patientContext and files are required", 400);
+    }
+    const result = await aiService.analyzeClinicalFiles(patientContext, files);
+    res.status(HttpStatusCode.Ok).send({
+      message: "Analysis completed successfully.",
+      result,
+    });
+    return;
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function generateReport(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { params, openAiResult } = req.body;
+    if (!params || !openAiResult) {
+      throw new (await import("../errors/customError.error")).CustomError("params and openAiResult are required", 400);
+    }
+    const result = await aiService.generateRegenerativeReport(params, openAiResult);
+    res.status(HttpStatusCode.Ok).send({
+      message: "Report generated successfully.",
+      result,
+    });
+    return;
+  } catch (error) {
+    next(error);
+  }
 }

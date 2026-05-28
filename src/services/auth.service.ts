@@ -19,12 +19,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export function generateToken(payload: { userId: string; email: string; accountType: string }): string {
+export function generateToken(payload: { userId: string; email: string; accountType: string; isInternal: boolean }): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
-export function verifyToken(token: string): { userId: string; email: string; accountType: string } {
-  return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; accountType: string };
+export function verifyToken(token: string): { userId: string; email: string; accountType: string; isInternal: boolean } {
+  return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; accountType: string; isInternal: boolean };
 }
 
 export async function registerUser(data: { name: string; email: string; password: string }): Promise<AuthTokens> {
@@ -36,7 +36,7 @@ export async function registerUser(data: { name: string; email: string; password
   const hashedPassword = await hashPassword(data.password);
   const user = await User.create({ ...data, password: hashedPassword });
 
-  const token = generateToken({ userId: user._id.toString(), email: user.email, accountType: user.role });
+  const token = generateToken({ userId: user._id.toString(), email: user.email, accountType: user.role, isInternal: user.isInternal ?? false });
 
   return {
     access_token: token,
@@ -55,7 +55,7 @@ export async function loginUser(data: { email: string; password: string }): Prom
     throw new CustomError("Invalid credentials", 401);
   }
 
-  const token = generateToken({ userId: user._id.toString(), email: user.email, accountType: user.role });
+  const token = generateToken({ userId: user._id.toString(), email: user.email, accountType: user.role, isInternal: user.isInternal ?? false });
 
   return {
     access_token: token,

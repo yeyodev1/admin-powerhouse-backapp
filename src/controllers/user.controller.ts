@@ -19,6 +19,7 @@ export async function getMe(req: AuthRequest, res: Response) {
     name: user.name,
     email: user.email,
     role: user.role,
+    isInternal: user.isInternal ?? false,
     createdAt: user.createdAt,
   });
 }
@@ -29,7 +30,7 @@ export async function getUsers(_req: AuthRequest, res: Response) {
 }
 
 export async function createUser(req: AuthRequest, res: Response) {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, isInternal } = req.body;
 
   if (!name || !email || !password) {
     throw new CustomError("Name, email and password are required", 400);
@@ -41,7 +42,13 @@ export async function createUser(req: AuthRequest, res: Response) {
   }
 
   const hashed = await hashPassword(password);
-  const user = await User.create({ name, email, password: hashed, role: role || "user" });
+  const user = await User.create({
+    name,
+    email,
+    password: hashed,
+    role: role || "user",
+    ...(isInternal !== undefined && { isInternal }),
+  });
   const obj = user.toObject();
   delete (obj as any).password;
   res.status(201).json(obj);
@@ -49,9 +56,12 @@ export async function createUser(req: AuthRequest, res: Response) {
 
 export async function updateUser(req: AuthRequest, res: Response) {
   const { id } = req.params;
-  const { name, email, role } = req.body;
+  const { name, email, role, isInternal } = req.body;
 
-  const user = await User.findByIdAndUpdate(id, { name, email, role }, { new: true }).select("-password");
+  const update: Record<string, unknown> = { name, email, role };
+  if (isInternal !== undefined) update.isInternal = isInternal;
+
+  const user = await User.findByIdAndUpdate(id, update, { new: true }).select("-password");
   if (!user) {
     throw new CustomError("User not found", 404);
   }

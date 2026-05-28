@@ -6,7 +6,7 @@ const router = Router();
 
 router.get("/users", getUsers);
 router.post("/users", authMiddleware, createUser);
-router.put("/users/:id", authMiddleware, updateUser);
+router.patch("/users/:id", authMiddleware, updateUser);
 router.delete("/users/:id", authMiddleware, deleteUser);
 
 export default router;

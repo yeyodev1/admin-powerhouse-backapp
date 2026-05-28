@@ -1,8 +1,18 @@
 import { Person, IPerson } from "../models/person.model";
+import { User } from "../models/user.model";
 import { CustomError } from "../errors/customError.error";
 
 export async function getPersons() {
-  return Person.find().sort({ createdAt: -1 }).populate('createdBy', '_id name email');
+  // Find internal users and admins to exclude them from the patients list
+  const internalAndAdmins = await User.find({
+    $or: [{ isInternal: true }, { role: "admin" }],
+  }).select("email");
+  
+  const excludedEmails = internalAndAdmins.map(u => u.email).filter(Boolean);
+
+  return Person.find({ email: { $nin: excludedEmails } })
+    .sort({ createdAt: -1 })
+    .populate("createdBy", "_id name email isInternal role");
 }
 
 export async function getPersonById(id: string) {
@@ -21,6 +31,14 @@ export async function createPerson(data: {
   createdBy: string;
 }) {
   if (!data.name) throw new CustomError("Name is required", 400);
+  
+  if (data.email) {
+    const existingPerson = await Person.findOne({ email: data.email });
+    if (existingPerson) {
+      throw new CustomError("Ya existe una persona registrada con este correo electrónico", 400);
+    }
+  }
+
   return Person.create(data);
 }
 

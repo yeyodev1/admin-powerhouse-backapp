@@ -30,7 +30,7 @@ const MedicalFileSchema = new Schema<IMedicalFile>({
 const PersonSchema = new Schema<IPerson>(
   {
     name: { type: String, required: true },
-    email: { type: String },
+    email: { type: String, unique: true, sparse: true },
     phone: { type: String },
     dateOfBirth: { type: String },
     address: { type: String },

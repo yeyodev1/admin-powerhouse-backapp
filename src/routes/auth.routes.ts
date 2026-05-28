@@ -5,8 +5,8 @@ import { getMe } from "../controllers/user.controller";
 
 const router = Router();
 
-router.post("/auth/register", register);
-router.post("/auth/login", login);
-router.get("/auth/me", authMiddleware, getMe);
+router.post("/register", register);
+router.post("/login", login);
+router.get("/me", authMiddleware, getMe);
 
 export default router;

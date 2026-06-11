@@ -4,16 +4,16 @@ import { createApp } from "./app";
 
 const port = process.env.PORT || 8100;
 
-async function main() {
-  await dbConnect();
+const { app, server } = createApp();
 
-  const { app, server } = createApp();
+dbConnect().catch(console.error);
 
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  const port = process.env.PORT || 8100;
   server.timeout = 10 * 60 * 1000;
-
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });
 }
 
-main();
+export default app;

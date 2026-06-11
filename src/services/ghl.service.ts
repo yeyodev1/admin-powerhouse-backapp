@@ -143,14 +143,28 @@ export class GhlService {
             const status = o.status || 'open';
             
             // Map Pipeline metrics
+            // Map Pipeline metrics
             const stageLower = stageName.toLowerCase();
+            
             if (stageLower.includes('llamada')) {
               pipelineData.calls++;
-              pipelineData.answeredCalls += Math.round(Math.random()); // Mocked answer rate for now
+              if (stageLower.includes('contest') || stageLower.includes('respond') || stageLower.includes('efectiva')) {
+                pipelineData.answeredCalls++;
+              }
             }
+            
             if (stageLower.includes('cita') || stageLower.includes('agend')) {
-              pipelineData.infoAppointmentsScheduled++;
-              if (Math.random() > 0.5) pipelineData.infoAppointmentsAttended++; // Mocked attendance
+              if (stageLower.includes('presencial') || stageLower.includes('física')) {
+                pipelineData.presentialAppointmentsScheduled++;
+                if (stageLower.includes('asisti') || stageLower.includes('show')) {
+                  pipelineData.presentialAppointmentsAttended++;
+                }
+              } else {
+                pipelineData.infoAppointmentsScheduled++;
+                if (stageLower.includes('asisti') || stageLower.includes('show')) {
+                  pipelineData.infoAppointmentsAttended++;
+                }
+              }
             }
             if (stageLower.includes('tratamiento') || status === 'won') {
               pipelineData.treatmentsStarted++;

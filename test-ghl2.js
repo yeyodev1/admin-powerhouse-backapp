@@ -8,8 +8,10 @@ async function run() {
         "Version": "2021-07-28"
       }
     });
-    console.log("Messages array length:", msgsRes.data.messages ? msgsRes.data.messages.length : 'undefined');
-    console.log("Sample direction:", msgsRes.data.messages[0].direction);
+    console.log(Object.keys(msgsRes.data));
+    console.log(msgsRes.data.messages);
+    console.log(msgsRes.data.messages?.messages);
+    console.log(msgsRes.data.messages?.messages?.length);
   } catch (err) {
     console.log("Error:", err.message, err.response?.data);
   }

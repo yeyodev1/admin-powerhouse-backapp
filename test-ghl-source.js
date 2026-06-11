@@ -8,10 +8,14 @@ async function run() {
         "Version": "2021-07-28"
       }
     });
-    console.log("Messages array length:", msgsRes.data.messages ? msgsRes.data.messages.length : 'undefined');
-    console.log("Sample direction:", msgsRes.data.messages[0].direction);
+    const msgs = msgsRes.data.messages?.messages || [];
+    msgs.forEach(m => {
+      if (m.direction === 'outbound') {
+        console.log(`Msg: ${m.body.substring(0, 30)}... | Source: ${m.source} | UserId: ${m.userId}`);
+      }
+    });
   } catch (err) {
-    console.log("Error:", err.message, err.response?.data);
+    console.log("Error:", err.message);
   }
 }
 run();

@@ -8,10 +8,11 @@ export const getAgentMetrics = async (
   next: NextFunction
 ) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, agentId } = req.query;
     const result = await ghlService.getAgentMetrics(
       startDate as string, 
-      endDate as string
+      endDate as string,
+      agentId as string
     );
     
     return res.status(HttpStatusCode.Ok).send({

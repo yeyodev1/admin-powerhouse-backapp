@@ -6,7 +6,7 @@ export class GhlService {
   private readonly token = process.env.GHL_TOKEN || "pit-c68a57c4-a622-4c04-b968-52c35f4dfe1f";
   private readonly locationId = process.env.GHL_LOCATION_ID || "P62nq2IVqxaQbOrD3P1R";
 
-  public async getAgentMetrics(startDate?: string, endDate?: string) {
+  public async getAgentMetrics(startDate?: string, endDate?: string, agentId?: string) {
     try {
       if (!this.locationId) {
         throw new Error("LOCATION_ID_MISSING");
@@ -20,7 +20,11 @@ export class GhlService {
         }
       });
 
-      const users = usersResponse.data.users || [];
+      let users = usersResponse.data.users || [];
+
+      if (agentId) {
+        users = users.filter((u: any) => u.id === agentId);
+      }
 
       // 1.5 Obtener pipelines para mapear Stage ID -> Stage Name
       let stageMap: Record<string, string> = {};
@@ -57,6 +61,9 @@ export class GhlService {
         };
 
         let activeHours = 0;
+        let recentChats: any[] = [];
+        let messagesSentManual = 0;
+        let messagesSentAutomated = 0;
 
         // 2.1 Buscar conversaciones para métricas de mensajes
         try {
@@ -106,8 +113,65 @@ export class GhlService {
             activeHours = 1;
           }
 
-          messagesSent = conversations.length * 2;
-          messagesReceived = conversations.length * 3;
+          recentChats = conversations.map((c: any) => ({
+            id: c.id,
+            name: c.fullName || c.contactName || "Desconocido",
+            phone: c.phone || c.email || "Sin contacto",
+            lastMessage: c.lastMessageBody || "",
+            date: c.dateUpdated || c.dateAdded || new Date().toISOString(),
+            source: c.lastOutboundMessageAction || ""
+          })); // Devolvemos todas las conversaciones
+
+          // Fetch real messages to accurately count sent and received messages
+          let realMessagesSentManual = 0;
+          let realMessagesSentAutomated = 0;
+          let realMessagesReceived = 0;
+
+          // Hacemos las llamadas secuenciales para evitar límites de rate de la API de GHL
+          for (const c of conversations) {
+            try {
+              const msgsRes = await axios.get(`${this.baseUrl}/conversations/${c.id}/messages`, {
+                headers: {
+                  "Authorization": `Bearer ${this.token}`,
+                  "Version": "2021-07-28"
+                }
+              });
+              
+              const msgs = msgsRes.data.messages?.messages || msgsRes.data.messages || [];
+              if (Array.isArray(msgs)) {
+                msgs.forEach((m: any) => {
+                  let isInRange = true;
+                  if (startDate && endDate) {
+                    const mTime = new Date(m.dateAdded).getTime();
+                    const start = new Date(startDate).getTime();
+                    const endFull = new Date(endDate);
+                    endFull.setUTCHours(23, 59, 59, 999);
+                    const endMs = endFull.getTime();
+                    isInRange = mTime >= start && mTime <= endMs;
+                  }
+                  
+                  if (isInRange) {
+                    if (m.direction === 'outbound') {
+                      if (m.source === 'workflow' || m.source === 'campaign' || m.source === 'automation') {
+                        realMessagesSentAutomated++;
+                      } else {
+                        realMessagesSentManual++;
+                      }
+                    } else if (m.direction === 'inbound') {
+                      realMessagesReceived++;
+                    }
+                  }
+                });
+              }
+            } catch (err) {
+              console.warn(`No se pudieron obtener los mensajes para la conversación ${c.id}`);
+            }
+          }
+
+          messagesSent = realMessagesSentManual + realMessagesSentAutomated;
+          messagesSentManual = realMessagesSentManual;
+          messagesSentAutomated = realMessagesSentAutomated;
+          messagesReceived = realMessagesReceived;
           avgResponseTimeMinutes = conversations.length > 0 ? 15 : 0;
         } catch (convErr) {
           console.warn(`No se pudieron obtener conversaciones para el usuario ${user.id}`);
@@ -195,12 +259,15 @@ export class GhlService {
           id: user.id,
           name: user.name,
           email: user.email,
-          messagesSent,
-          messagesReceived,
+          messagesSent: messagesSent,
+          messagesSentManual: messagesSentManual,
+          messagesSentAutomated: messagesSentAutomated,
+          messagesReceived: messagesReceived,
           avgResponseTimeMinutes,
           activeHours, // New metric passed to frontend
           pipeline: pipelineData,
           opportunities: opportunitiesData,
+          recentChats,
           status: "online", 
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=128`
         };
@@ -220,7 +287,7 @@ export class GhlService {
         throw new Error("Por favor configura GHL_LOCATION_ID en el archivo .env para conectar con la API real.");
       }
       
-      throw new Error("No se pudieron obtener las métricas de los agentes desde GoHighLevel.");
+      throw new Error(`Error GHL: ${JSON.stringify(error?.response?.data || error.message)}`);
     }
   }
 }

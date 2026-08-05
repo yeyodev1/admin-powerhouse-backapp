@@ -2,15 +2,33 @@ import { Person, IPerson } from "../models/person.model";
 import { User } from "../models/user.model";
 import { CustomError } from "../errors/customError.error";
 
-export async function getPersons() {
+export async function getPersons(query?: { search?: string; filter?: string; userId?: string }) {
   // Find internal users and admins to exclude them from the patients list
   const internalAndAdmins = await User.find({
     $or: [{ isInternal: true }, { role: "admin" }],
   }).select("email");
-  
-  const excludedEmails = internalAndAdmins.map(u => u.email).filter(Boolean);
 
-  return Person.find({ email: { $nin: excludedEmails } })
+  const excludedEmails = internalAndAdmins.map((u) => u.email).filter(Boolean);
+
+  const mongoQuery: any = { email: { $nin: excludedEmails } };
+
+  if (query?.filter === "mine" && query?.userId) {
+    mongoQuery.createdBy = query.userId;
+  } else if (query?.filter === "with-files") {
+    mongoQuery["medicalFiles.0"] = { $exists: true };
+  }
+
+  if (query?.search && query.search.trim()) {
+    const s = query.search.trim();
+    const regex = new RegExp(s, "i");
+    mongoQuery.$or = [
+      { name: regex },
+      { email: regex },
+      { phone: regex },
+    ];
+  }
+
+  return Person.find(mongoQuery)
     .sort({ createdAt: -1 })
     .populate("createdBy", "_id name email isInternal role");
 }

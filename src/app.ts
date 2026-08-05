@@ -10,13 +10,24 @@ const whitelist = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:8101",
-  "http://localhost:5173",
-  "https://admin-powerhouse.netlify.app"
+  "https://admin-powerhouse.netlify.app",
+  "https://testing-storybrand-frontend.bakano.ec",
+  "http://testing-storybrand-frontend.bakano.ec"
 ];
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    if (!origin || whitelist.includes(origin)) {
+    if (!origin) return callback(null, true);
+
+    const cleanOrigin = origin.replace(/\/+$/, "");
+    const baseOrigin = cleanOrigin.split("/").slice(0, 3).join("/");
+
+    if (
+      whitelist.includes(cleanOrigin) ||
+      whitelist.includes(baseOrigin) ||
+      cleanOrigin.endsWith(".bakano.ec") ||
+      baseOrigin.endsWith(".bakano.ec")
+    ) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));

@@ -27,3 +27,25 @@ export const getAgentMetrics = async (
     });
   }
 };
+
+export const getConversationMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = req.params.id as string;
+    const messages = await ghlService.getConversationMessages(id);
+    
+    return res.status(HttpStatusCode.Ok).send({
+      message: "Messages retrieved successfully.",
+      messages
+    });
+  } catch (error) {
+    console.error("Error in getConversationMessages:", error);
+    return res.status(HttpStatusCode.InternalServerError).send({
+      message: "Error retrieving messages",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};

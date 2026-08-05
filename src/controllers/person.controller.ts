@@ -13,7 +13,11 @@ import {
 import { aiService } from "../services/ai.service";
 
 export async function getAllPersons(req: AuthRequest, res: Response) {
-  const persons = await getPersons();
+  const search = req.query.search as string;
+  const filter = req.query.filter as string;
+  const userId = req.user?.userId;
+
+  const persons = await getPersons({ search, filter, userId });
   res.json(persons);
 }
 

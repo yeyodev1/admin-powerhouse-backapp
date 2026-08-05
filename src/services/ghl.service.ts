@@ -74,13 +74,13 @@ export class GhlService {
             }
           });
           let conversations = convResponse.data.conversations || [];
-          
+
           if (startDate && endDate) {
             const start = new Date(startDate).getTime();
             const endFull = new Date(endDate);
             endFull.setUTCHours(23, 59, 59, 999);
             const endMs = endFull.getTime();
-            
+
             conversations = conversations.filter((c: any) => {
               const dateStr = c.dateUpdated || c.updatedAt || c.dateAdded || c.createdAt || c.lastMessageDate;
               if (!dateStr) return false;
@@ -136,7 +136,7 @@ export class GhlService {
                   "Version": "2021-07-28"
                 }
               });
-              
+
               const msgs = msgsRes.data.messages?.messages || msgsRes.data.messages || [];
               if (Array.isArray(msgs)) {
                 msgs.forEach((m: any) => {
@@ -149,7 +149,7 @@ export class GhlService {
                     const endMs = endFull.getTime();
                     isInRange = mTime >= start && mTime <= endMs;
                   }
-                  
+
                   if (isInRange) {
                     if (m.direction === 'outbound') {
                       if (m.source === 'workflow' || m.source === 'campaign' || m.source === 'automation') {
@@ -186,14 +186,14 @@ export class GhlService {
             }
           });
           let opps = oppsResponse.data.opportunities || [];
-          
+
           if (startDate && endDate) {
             const start = new Date(startDate).getTime();
             // Fin del día para el endDate
             const endFull = new Date(endDate);
             endFull.setUTCHours(23, 59, 59, 999);
             const endMs = endFull.getTime();
-            
+
             opps = opps.filter((o: any) => {
               const oppTime = new Date(o.createdAt).getTime();
               return oppTime >= start && oppTime <= endMs;
@@ -205,18 +205,18 @@ export class GhlService {
             const oppVal = o.monetaryValue || 0;
             const stageName = stageMap[o.pipelineStageId] || o.pipelineStageId || 'Desconocido';
             const status = o.status || 'open';
-            
+
             // Map Pipeline metrics
             // Map Pipeline metrics
             const stageLower = stageName.toLowerCase();
-            
+
             if (stageLower.includes('llamada')) {
               pipelineData.calls++;
               if (stageLower.includes('contest') || stageLower.includes('respond') || stageLower.includes('efectiva')) {
                 pipelineData.answeredCalls++;
               }
             }
-            
+
             if (stageLower.includes('cita') || stageLower.includes('agend')) {
               if (stageLower.includes('presencial') || stageLower.includes('física')) {
                 pipelineData.presentialAppointmentsScheduled++;
@@ -268,7 +268,7 @@ export class GhlService {
           pipeline: pipelineData,
           opportunities: opportunitiesData,
           recentChats,
-          status: "online", 
+          status: "online",
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0D8ABC&color=fff&size=128`
         };
       });
@@ -282,12 +282,36 @@ export class GhlService {
       };
     } catch (error: any) {
       console.error("Error en GhlService:", error?.response?.data || error.message);
-      
+
       if (error.message === "LOCATION_ID_MISSING") {
         throw new Error("Por favor configura GHL_LOCATION_ID en el archivo .env para conectar con la API real.");
       }
-      
+
       throw new Error(`Error GHL: ${JSON.stringify(error?.response?.data || error.message)}`);
+    }
+  }
+
+  async getConversationMessages(conversationId: string) {
+    try {
+      const msgsRes = await axios.get(`${this.baseUrl}/conversations/${conversationId}/messages`, {
+        headers: {
+          "Authorization": `Bearer ${this.token}`,
+          "Version": "2021-07-28"
+        }
+      });
+      const msgs = msgsRes.data.messages?.messages || msgsRes.data.messages || [];
+      if (!Array.isArray(msgs)) return [];
+
+      return msgs.map((m: any) => ({
+        id: m.id,
+        body: m.body || '',
+        direction: m.direction,
+        source: m.source || 'app',
+        date: m.dateAdded
+      })).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    } catch (error) {
+      console.error(`Error in getConversationMessages for ${conversationId}:`, error);
+      throw error;
     }
   }
 }

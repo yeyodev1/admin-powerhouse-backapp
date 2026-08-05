@@ -21,12 +21,16 @@ const corsOptions: cors.CorsOptions = {
 
     const cleanOrigin = origin.replace(/\/+$/, "");
     const baseOrigin = cleanOrigin.split("/").slice(0, 3).join("/");
+    const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/+$/, "") : "";
 
     if (
       whitelist.includes(cleanOrigin) ||
       whitelist.includes(baseOrigin) ||
+      (frontendUrl && (cleanOrigin === frontendUrl || baseOrigin === frontendUrl)) ||
       cleanOrigin.endsWith(".bakano.ec") ||
-      baseOrigin.endsWith(".bakano.ec")
+      baseOrigin.endsWith(".bakano.ec") ||
+      cleanOrigin.endsWith(".vercel.app") ||
+      baseOrigin.endsWith(".vercel.app")
     ) {
       callback(null, true);
     } else {

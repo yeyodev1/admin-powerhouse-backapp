@@ -61,10 +61,11 @@ export async function deleteFile(req: AuthRequest, res: Response) {
 export async function analyzePerson(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { patientContext, files } = req.body;
-    if (!patientContext || !files) {
-      throw new (await import("../errors/customError.error")).CustomError("patientContext and files are required", 400);
+    // `files` es opcional: sin adjuntos el análisis corre solo con el contexto
+    if (!patientContext) {
+      throw new (await import("../errors/customError.error")).CustomError("patientContext is required", 400);
     }
-    const result = await aiService.analyzeClinicalFiles(patientContext, files);
+    const result = await aiService.analyzeClinicalFiles(patientContext, files ?? []);
     res.status(HttpStatusCode.Ok).send({
       message: "Analysis completed successfully.",
       result,

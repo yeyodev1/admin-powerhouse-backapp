@@ -250,13 +250,17 @@ export async function sendStudyToWhatsapp(publicId: string) {
   const url = buildStudyUrl(study.publicId);
   const payload = {
     // Contrato de la plantilla de WhatsApp: nombre, apellido, correo,
-    // telefono y pdfEducativo (el link del estudio). No renombrar.
+    // telefono y pdfEducativo. No renombrar.
     nombre: study.nombre,
     // Estudios previos a la migracion no traen apellido: se deriva del fullName
     apellido: study.apellido || study.fullName.replace(study.nombre, "").trim(),
     correo: study.email,
     telefono: study.telefono,
-    pdfEducativo: url,
+    // SOLO el slug: el boton de URL dinamica de la plantilla ya tiene la base
+    // (app-powerhouse-backapp.vercel.app/e/) y concatena esta variable al final.
+    // Mandar la URL completa duplicaba el dominio en el link del mensaje.
+    pdfEducativo: study.publicId,
+    pdfEducativoUrl: url,
 
     // Claves adicionales para otras automatizaciones
     nombre_completo: study.fullName,

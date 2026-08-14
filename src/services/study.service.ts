@@ -7,11 +7,10 @@ import { STUDY_SYSTEM_PROMPT, buildStudyUserPrompt } from "./studyPrompt";
 
 const STUDY_MODEL = process.env.STUDY_AI_MODEL || "claude-sonnet-4-6";
 
-/** Webhook de GHL que entrega el estudio por WhatsApp */
+/** Webhook de GHL que entrega el estudio por WhatsApp (plantilla pdfEducativo) */
 const GHL_STUDY_WEBHOOK =
   process.env.GHL_STUDY_WEBHOOK ||
-  process.env.GHL_ASSESSMENT_WEBHOOK ||
-  "https://services.leadconnectorhq.com/hooks/P62nq2IVqxaQbOrD3P1R/webhook-trigger/S99es9hXTIfKesdWrKBW";
+  "https://services.leadconnectorhq.com/hooks/P62nq2IVqxaQbOrD3P1R/webhook-trigger/b593f72f-09fc-4c70-8da5-cabe88cfca83";
 
 function publicBaseUrl(): string {
   const raw =
@@ -48,6 +47,7 @@ export async function enqueueStudy(assessment: IAssessment): Promise<IStudy> {
     assessment: assessment._id,
     assessmentPublicId: assessment.publicId,
     nombre: assessment.nombre,
+    apellido: assessment.apellido,
     fullName: assessment.fullName || `${assessment.nombre} ${assessment.apellido}`.trim(),
     email: assessment.email,
     telefono: assessment.telefono,
@@ -249,10 +249,18 @@ export async function sendStudyToWhatsapp(publicId: string) {
 
   const url = buildStudyUrl(study.publicId);
   const payload = {
+    // Contrato de la plantilla de WhatsApp: nombre, apellido, correo,
+    // telefono y pdfEducativo (el link del estudio). No renombrar.
     nombre: study.nombre,
+    // Estudios previos a la migracion no traen apellido: se deriva del fullName
+    apellido: study.apellido || study.fullName.replace(study.nombre, "").trim(),
+    correo: study.email,
+    telefono: study.telefono,
+    pdfEducativo: url,
+
+    // Claves adicionales para otras automatizaciones
     nombre_completo: study.fullName,
     email: study.email,
-    telefono: study.telefono,
     paso: "estudio_phb_listo",
     evento: "envio_estudio_whatsapp",
 

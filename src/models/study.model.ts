@@ -27,6 +27,7 @@ export interface IStudy extends Document {
 
   // Contacto denormalizado: el estudio se consulta sin tocar el assessment
   nombre: string;
+  apellido: string;
   fullName: string;
   email: string;
   telefono: string;
@@ -77,6 +78,7 @@ const StudySchema = new Schema<IStudy>(
     assessmentPublicId: { type: String, default: "", index: true },
 
     nombre: { type: String, default: "" },
+    apellido: { type: String, default: "" },
     fullName: { type: String, default: "" },
     email: { type: String, default: "", index: true },
     telefono: { type: String, default: "" },

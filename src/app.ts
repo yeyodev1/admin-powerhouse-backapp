@@ -12,7 +12,10 @@ const whitelist = [
   "http://localhost:8101",
   "https://admin-powerhouse.netlify.app",
   "https://testing-storybrand-frontend.bakano.ec",
-  "http://testing-storybrand-frontend.bakano.ec"
+  "http://testing-storybrand-frontend.bakano.ec",
+  // Funnel publico que sincroniza el cuestionario PHB
+  "https://powerhousebiotech.com",
+  "https://www.powerhousebiotech.com"
 ];
 
 const corsOptions: cors.CorsOptions = {
@@ -30,7 +33,11 @@ const corsOptions: cors.CorsOptions = {
       cleanOrigin.endsWith(".bakano.ec") ||
       baseOrigin.endsWith(".bakano.ec") ||
       cleanOrigin.endsWith(".vercel.app") ||
-      baseOrigin.endsWith(".vercel.app")
+      baseOrigin.endsWith(".vercel.app") ||
+      cleanOrigin.endsWith(".netlify.app") ||
+      baseOrigin.endsWith(".netlify.app") ||
+      cleanOrigin.endsWith(".powerhousebiotech.com") ||
+      baseOrigin.endsWith(".powerhousebiotech.com")
     ) {
       callback(null, true);
     } else {

@@ -36,9 +36,8 @@ function generatePublicId(): string {
 // ─── Cola ──────────────────────────────────────────────────────────────────────
 
 /**
- * Encola un estudio. NO lo genera: en Vercel la función se congela al responder,
- * así que una promesa suelta no sobreviviría. La generación la hace `runQueue`,
- * disparado por `kickQueue` (invocación HTTP aparte) o por el panel.
+ * Encola un estudio. NO lo genera: la generación la corre `runQueue`, disparado
+ * por `scheduleQueueRun` (waitUntil) o manualmente desde el panel.
  */
 export async function enqueueStudy(assessment: IAssessment): Promise<IStudy> {
   const previous = await Study.countDocuments({ assessment: assessment._id });
@@ -63,17 +62,41 @@ export async function enqueueStudy(assessment: IAssessment): Promise<IStudy> {
 }
 
 /**
- * Despierta al procesador con un fetch al propio servidor. Fire-and-forget:
- * arranca una invocación nueva que sí tiene su propio ciclo de vida.
+ * Agenda el procesamiento de la cola SIN bloquear la respuesta al cliente.
+ *
+ * En Vercel usa `waitUntil`: la plataforma mantiene viva la invocación hasta
+ * que la promesa termina, aun despues de responder. Es el unico mecanismo
+ * confiable ahi — un fire-and-forget (promesa suelta o HTTP a si mismo sin
+ * await) muere cuando la funcion se congela al responder; se comprobo en
+ * produccion con estudios que quedaban en `queued` para siempre.
+ *
+ * Fuera de Vercel (dev local, tests) basta una promesa en segundo plano.
+ * Ultimo recurso en ambos casos: el boton "Procesar cola" del panel, que
+ * invoca POST /api/studies/run-queue con la sesion del asesor.
  */
-export function kickQueue(): void {
-  const url = `${publicBaseUrl()}/api/studies/run-queue`;
-  axios
-    .post(url, {}, { headers: { "x-queue-token": process.env.QUEUE_TOKEN || "" }, timeout: 2000 })
-    .catch(() => {
-      /* si no despierta, el panel puede correr la cola manualmente */
-    });
+export function scheduleQueueRun(): void {
+  const job = () =>
+    runQueue().catch((error) => console.error("[study] runQueue fallo:", error?.message));
+
+  if (process.env.VERCEL) {
+    try {
+      // Import diferido: el paquete solo existe/aplica en el runtime de Vercel
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { waitUntil } = require("@vercel/functions") as {
+        waitUntil: (p: Promise<unknown>) => void;
+      };
+      waitUntil(job());
+      return;
+    } catch (error: any) {
+      console.error("[study] waitUntil no disponible:", error?.message);
+    }
+  }
+
+  void job();
 }
+
+/** Compat: alias del nombre anterior */
+export const kickQueue = scheduleQueueRun;
 
 async function callClaude(assessment: IAssessment): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -145,8 +168,22 @@ export async function runStudy(studyId: string): Promise<IStudy | null> {
   }
 }
 
+/** Un "generating" mas viejo que esto es una invocacion muerta: se rescata */
+const STALE_GENERATING_MS = 10 * 60 * 1000;
+
 /** Procesa la cola. `limit` evita agotar el tiempo de la función serverless. */
 export async function runQueue(limit = 2) {
+  // Rescate: si una invocacion murio a media generacion (timeout, deploy),
+  // el estudio quedo en "generating" sin dueño. Se devuelve a la cola.
+  const staleBefore = new Date(Date.now() - STALE_GENERATING_MS);
+  const rescued = await Study.updateMany(
+    { status: "generating", startedAt: { $lt: staleBefore } },
+    { status: "queued", stage: "Reintentando (la generación anterior se interrumpió)", progress: 5 }
+  );
+  if (rescued.modifiedCount) {
+    console.warn(`[study] rescatados ${rescued.modifiedCount} estudios huérfanos`);
+  }
+
   const pending = await Study.find({ status: "queued" }).sort({ queuedAt: 1 }).limit(limit);
   const results = [];
   for (const study of pending) {

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types/AuthRequest";
 import {
   enqueueStudy,
-  kickQueue,
+  scheduleQueueRun,
   runQueue,
   getStudy,
   listStudies,
@@ -19,7 +19,7 @@ import { CustomError } from "../errors/customError.error";
 export async function createForAssessment(req: AuthRequest, res: Response) {
   const assessment = await getByPublicId(req.params.publicId as string);
   const study = await enqueueStudy(assessment);
-  kickQueue();
+  scheduleQueueRun();
   res.status(201).json({
     publicId: study.publicId,
     version: study.version,
@@ -108,7 +108,7 @@ export async function sendWhatsapp(req: AuthRequest, res: Response) {
 
 /**
  * POST /api/studies/run-queue — procesa la cola.
- * Lo llama `kickQueue` y también el panel. Si hay QUEUE_TOKEN configurado se
+ * Lo llama `scheduleQueueRun` y también el panel. Si hay QUEUE_TOKEN configurado se
  * exige, salvo que la petición venga de un usuario del staff ya autenticado.
  */
 export async function processQueue(req: Request, res: Response) {

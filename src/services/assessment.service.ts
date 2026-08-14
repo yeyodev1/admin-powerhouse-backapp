@@ -234,9 +234,9 @@ export async function syncAssessment(payload: SyncPayload) {
     // ...y en el mismo momento se encola el estudio. Import diferido para
     // no crear un ciclo: study.service ya importa de este módulo.
     try {
-      const { enqueueStudy, kickQueue } = await import("./study.service");
+      const { enqueueStudy, scheduleQueueRun } = await import("./study.service");
       await enqueueStudy(assessment);
-      kickQueue();
+      scheduleQueueRun();
     } catch (error: any) {
       console.error("[assessment] no se pudo encolar el estudio:", error?.message);
     }

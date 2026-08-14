@@ -106,7 +106,9 @@ export function renderStudyNotFound(): string {
 }
 
 export function renderStudy(study: IStudy): string {
-  const bookingUrl = process.env.PUBLIC_BOOKING_URL || "https://powerhousebiotech.com/";
+  const bookingUrl =
+    process.env.PUBLIC_BOOKING_URL ||
+    "https://api.leadconnectorhq.com/widget/booking/Pt4IJuFRDFG2EsbVaZsR";
   const name = study.fullName || study.nombre || "Paciente";
 
   const header = `

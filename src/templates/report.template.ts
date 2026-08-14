@@ -76,7 +76,10 @@ const BASE_STYLES = `
   .foot{text-align:center;font-size:12px;color:rgba(255,255,255,.42);margin-top:26px;line-height:1.7}
   .foot a{color:rgba(255,255,255,.62)}
   /* El logo es blanco sobre transparente: al imprimir sobre papel hay que invertirlo */
-  @media print{body{background:#fff;color:#111}.card{background:#fff;border-color:#ddd;color:#111}.brand__logo{filter:invert(1)}}
+  .save{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:11px 20px;border-radius:99px;cursor:pointer;
+    background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8);font-size:13px;font-family:inherit}
+  .save:hover{border-color:#21bcfb;color:#fff}
+  @media print{body{background:#fff;color:#111}.card{background:#fff;border-color:#ddd;color:#111}.brand__logo{filter:invert(1)}.cta,.save{display:none}}
 `;
 
 function shell(title: string, body: string): string {
@@ -109,7 +112,9 @@ export function renderNotFound(): string {
 }
 
 export function renderReport(assessment: IAssessment): string {
-  const bookingUrl = process.env.PUBLIC_BOOKING_URL || "https://powerhousebiotech.com/";
+  const bookingUrl =
+    process.env.PUBLIC_BOOKING_URL ||
+    "https://api.leadconnectorhq.com/widget/booking/Pt4IJuFRDFG2EsbVaZsR";
   const fullName =
     assessment.fullName || `${assessment.nombre} ${assessment.apellido}`.trim() || "Paciente";
   const isComplete = assessment.status === "completed";
@@ -229,6 +234,10 @@ export function renderReport(assessment: IAssessment): string {
       <div class="perk"><span>✓</span><div><b>Ruta personalizada</b> según tu capacidad regenerativa real, no según el promedio.</div></div>
     </div>
     <a class="cta__btn" href="${esc(bookingUrl)}" target="_blank" rel="noopener">AGENDAR MI CITA ORIENTATIVA</a>
+    <div>
+      <!-- El dialogo de impresion del navegador guarda como PDF en el dispositivo -->
+      <button class="save" onclick="window.print()">Guardar como PDF</button>
+    </div>
   </div>
 
   <p class="foot">

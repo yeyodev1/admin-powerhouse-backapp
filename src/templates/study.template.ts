@@ -1,5 +1,5 @@
-import { marked } from "marked";
 import { IStudy } from "../models/study.model";
+import { renderMarkdown } from "./markdown";
 import { studyFinalContent } from "../services/study.service";
 import { PHB_LOGO_DATA_URI } from "./logo.asset";
 
@@ -16,15 +16,6 @@ function esc(value: unknown): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-/**
- * El markdown se escapa antes de parsear: el texto pasa por un editor humano y
- * no hay razón para permitir HTML crudo en un documento que se comparte.
- */
-function renderMarkdown(md: string): string {
-  const safe = md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return marked.parse(safe, { async: false, gfm: true, breaks: false }) as string;
 }
 
 function formatDate(date?: Date): string {
